@@ -1,0 +1,72 @@
+# this is an example parameter file
+# for running a stochastic simulation of the SS model
+# as used for generating Supplemental Video S2
+
+ACTION rundynamics
+
+# number of iterations to run
+NITER 1
+
+# -------- Important parameters ------------
+# effective stopping probability (p_s hat)
+PSTOPEFF 0.4
+
+# average total number of mitos in the domain
+TOTMITOINL 100
+
+# threshold for mitophagy
+DEATHPROTLEVEL 0D0
+
+# number of discrete demand sites
+NREGIONS 5
+
+# dimensionless decay rate kd hat
+KDECAY 0.6
+
+# Total number of stationary mitochondria
+NSINKS 50
+
+# Number of time-steps for how long to run the simulation
+NSTEP 1D4
+
+# simulation time step
+DELT 1D-3
+
+# Dump snapshots of cluster positions
+# Dump every 10 timesteps, into a file called example_ssphago.snap.out
+# last 1 indicates to dump the 1st iteration only
+SNAPSHOT 10 *.snap.out 1
+
+# -------- Other parameters -----------------
+
+# reseed the random number generator to get a different outcome
+# each time simulation is run
+RNGSEED -2
+
+# will output statistics to file example_ssphago.out
+OUTFILE *.out
+
+# distribute stationary mitos evenly on all regions,
+# place remainder randomly
+FILLUPREGIONS T
+
+# turn off fusion of motile mitochondria among each other
+KFMOV 0
+
+
+# sink width (not used for statistics involving stopped mitos only)
+SINKWIDTH 0.02
+
+# dimensionless domain size
+L 1
+
+# dimensionless mitochondrial velocity
+VEL 1D0
+
+# how often to print progress to standard out
+PRINTEVERY 100
+
+# how often to dump statistics into outfile
+OUTPUTEVERY 1000
+
+

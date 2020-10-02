@@ -1,0 +1,68 @@
+# this is an example parameter file
+# for running a stochastic simulation of the CoG model
+# as used for generating Supplemental Video S1 
+
+ACTION rundynamics
+
+# number of iterations to run
+NITER 1
+
+# -------- Important parameters ------------
+
+
+# stopping probability (p_s)
+PS 0.4
+
+# average total number of mitos in the domain
+TOTMITOINL 100
+
+# threshold for mitophagy
+DEATHPROTLEVEL 0D0
+
+# number of discrete demand sites
+NREGIONS 5
+
+# dimensionless decay rate kdhat
+KDECAY 0.6
+
+# Average total number of stationary mitochondria
+NSINKS 50
+
+# number of time-steps for how long to run the simulation
+NSTEP 1D4
+
+# simulation time step
+DELT 1D-3
+
+# Dump snapshots of cluster positions
+# Dump every 10 timesteps, into a file called example_ssphago.snap.out
+# last 1 indicates to dump the 1st iteration only
+SNAPSHOT 1D1 *.snap.out 1
+
+# -------- Other parameters -----------------
+
+# reseed the random number generator to get a different outcome
+# each time simulation is run
+RNGSEED -2
+
+# will output statistics to file example_ssphago.out
+OUTFILE *.out
+
+# sink width (not used for statistics involving stopped mitos only)
+SINKWIDTH 0.02
+
+# dimensionless domain size
+L 1D0
+
+# dimensionless mitochondrial velocity
+VEL 1D0
+
+# how often to print progress to standard out
+PRINTEVERY 100
+
+# how often to dump statistics into outfile
+OUTPUTEVERY 1000
+
+
+
+
