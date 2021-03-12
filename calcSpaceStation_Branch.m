@@ -12,28 +12,41 @@
 % xplot= x positions at which densities are calculated
 % dx = binsize for x
 
-function [Smreg,opt,Nm,Pmx,Mmx,regpos,xplot,dx] = calcSpaceStation(options)
+function [Smreg,opt,Nm,Pmx,Mmx,regpos,xplot,dx] = calcSpaceStation_Branch(options)
 %%
 % declare default parameters
 opt.pf = 0.3; % protein exchange probability
 opt.v = 1; % velocity of moving mito
-opt.kd = 1; % protein degradation rate
+opt.kd = 0.1; % protein degradation rate
 opt.L = 1; % total domain length
 
-opt.Nsinks = 50; %number of sinks
-opt.Nregions = 10; % number of regions the domain is divided into
+opt.Nsinks = 100; %number of sinks along the region
+opt.Nregions = 4; % number of regions the domain is divided into
+% for a branched network, this is just the number of regions along one
+% trajectory of mitochondria. 
+%Actual number of regions = (ndeg^(Nregions)-1)/(ndeg-1)
 
+Nsinkperreg = opt.Nsinks/opt.Nregions; % make sure this is a whole number
 opt.npt = 1000; %discretization while plotting
 opt.M = 1500; % total number of mitochondria 
 opt.sinkinreginput = 0;
+% declare branching degree
+opt.ndeg = 1;
 
 % copy over input options
 if (exist('options')==1)
     opt = copyStruct(options, opt);
 end
 
+%opt.rho = (opt.M - opt.Nsinks)/opt.L;
 % declare rho as option
-opt.rho = (opt.M - opt.Nsinks)/opt.L;
+if (opt.ndeg == 1)
+     opt.rho = (opt.M - opt.Nsinks)/opt.L;
+else
+     opt.rho = (opt.M - (opt.Nsinks/opt.Nregions)*(opt.ndeg^(opt.Nregions)-1)/(opt.ndeg-1))/opt.L;
+end
+
+%opt.rho 
 
 % redeclare for simple reading of code
 del = opt.L/(opt.Nregions+1); % distance between regions
@@ -44,10 +57,11 @@ Nsinks = opt.Nsinks;
 Nregions = opt.Nregions;
 rho = opt.rho;
 pf = opt.pf;
+ndeg = opt.ndeg;
 
 
 % derived known parameters
-B = pf * v * rho / (4 * (kd + v*rho*pf/2)); %Beta, factor in equations
+%B = pf * v * rho / (4 * (kd + v*rho*pf/2)); %Beta, factor in equations
 a = kd*del/v; % alpha, exponent used in equation
 
 %% position sinks in nregions
@@ -55,6 +69,13 @@ if (opt.sinkinreginput == 0) %if no predefined distribution exists
     clear sinkinreg
     sinkinreg = randi(Nregions,1,Nsinks);
     Nm = zeros(1,Nregions); % Nm gives the number of sink mito in a given region
+%     lastsink = 1;
+%     for i = 1:Nregions
+%         Nm(i) = Nsinkperreg * ndeg^(i-1); 
+%         sinkinreg(lastsink:lastsink+Nm(i)-1) = i;
+%         lastsink = lastsink+Nm(i);
+%     end
+        
 else
     sinkinreg = options.sinkinreginput;
 end
@@ -62,6 +83,9 @@ sinkinreg = sort(sinkinreg);
 for k = 1:Nregions
     Nm(k) = sum(sinkinreg == k);
 end
+% reassign total number of sinks as lastsink
+%Nsinks = lastsink-1;
+%opt.Nsinks = Nsinks;
 %%
 % get spacing between individual sinks
 dellist = del * (sinkinreg(2:end) - sinkinreg(1:end-1)); 
@@ -90,10 +114,20 @@ columnstart = 1;
 
 
 for m = 1:Nsinks
-    % P eqn
-    pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m)),0,1,-pf*B/2];
-    % M eqn
-    pmmatrix(rowstart+1,columnstart:columnstart+3) = [-pf*B*exp(-alist(m))/2,exp(alist(m)),0,-(1- (pf/2) + pf*B/2)];
+    currReg = sinkinreg(m); % region which the sink belongs to
+    rhoN = rho/ndeg^(currReg-1); % scaled rho for input
+    B = pf * v *rhoN/ (4 * (kd + v*rhoN*pf/2)); %Beta, factor in equations
+    if (alist(m) > 0)
+        % P eqn
+        pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m))/ndeg,0,1,-pf*B/2/ndeg];
+        % M eqn
+        pmmatrix(rowstart+1,columnstart:columnstart+3) = [-pf*B*exp(-alist(m))/2/ndeg,exp(alist(m))/ndeg,0,-(1- (pf/2) + pf*B/2/ndeg)];
+    else
+        % P eqn
+        pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m)),0,1,-pf*B/2];
+        % M eqn
+        pmmatrix(rowstart+1,columnstart:columnstart+3) = [-pf*B*exp(-alist(m))/2,exp(alist(m)),0,-(1- (pf/2) + pf*B/2)];
+    end
     % redeclare rowstart and columnstart
     rowstart = rowstart+2;
     columnstart = columnstart+2;
@@ -111,9 +145,16 @@ solnvector = pmmatrix\constmatrix;
 % function values by sink
 Pm0 = solnvector(1:2:end-1);
 Mm0 = solnvector(2:2:end);
+Sm = zeros(Nsinks,1);
+%Sm = B*2/rho * (Pm0(1:end-1) .* exp(-alist)' + Mm0(2:end));
 
-
-Sm = B*2/rho * (Pm0(1:end-1) .* exp(-alist)' + Mm0(2:end));
+for m = 1:Nsinks
+    currReg = sinkinreg(m); % region which the sink belongs to
+    rhoN = rho/ndeg^(currReg-1);
+    B = pf * v *rhoN / (4 * (kd + v*rhoN*pf/2));
+    Sm(m) = B*2/rhoN * (Pm0(m) .* exp(-alist(m)) + Mm0(m+1));
+end
+    
 Smreg = zeros(1,Nregions);
 
 %%

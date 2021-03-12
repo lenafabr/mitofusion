@@ -12,16 +12,16 @@
 % xplot= x positions at which densities are calculated
 % dx = binsize for x
 
-function [Smreg,opt,Nm,Pmx,Mmx,regpos,xplot,dx] = calcSpaceStation(options)
+function [Smreg,opt,Nm,Pmx,Mmx,regpos,xplot,dx] = calcSpaceStation_antero(options)
 %%
 % declare default parameters
-opt.pf = 0.3; % protein exchange probability
+opt.pf = 0.1; % protein exchange probability
 opt.v = 1; % velocity of moving mito
-opt.kd = 1; % protein degradation rate
+opt.kd = 0.1; % protein degradation rate
 opt.L = 1; % total domain length
 
-opt.Nsinks = 50; %number of sinks
-opt.Nregions = 10; % number of regions the domain is divided into
+opt.Nsinks = 500; %number of sinks
+opt.Nregions = 2; % number of regions the domain is divided into
 
 opt.npt = 1000; %discretization while plotting
 opt.M = 1500; % total number of mitochondria 
@@ -45,9 +45,9 @@ Nregions = opt.Nregions;
 rho = opt.rho;
 pf = opt.pf;
 
-
+rhop = rho/2;
 % derived known parameters
-B = pf * v * rho / (4 * (kd + v*rho*pf/2)); %Beta, factor in equations
+B = pf * v * rho / (4 * (kd + v*rhop*pf/2)); %Beta, factor in equations
 a = kd*del/v; % alpha, exponent used in equation
 
 %% position sinks in nregions
@@ -91,9 +91,9 @@ columnstart = 1;
 
 for m = 1:Nsinks
     % P eqn
-    pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m)),0,1,-pf*B/2];
+    pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m)),0,1,0];
     % M eqn
-    pmmatrix(rowstart+1,columnstart:columnstart+3) = [-pf*B*exp(-alist(m))/2,exp(alist(m)),0,-(1- (pf/2) + pf*B/2)];
+    pmmatrix(rowstart+1,columnstart:columnstart+3) = [0,exp(alist(m)),0,-1];
     % redeclare rowstart and columnstart
     rowstart = rowstart+2;
     columnstart = columnstart+2;
@@ -113,7 +113,8 @@ Pm0 = solnvector(1:2:end-1);
 Mm0 = solnvector(2:2:end);
 
 
-Sm = B*2/rho * (Pm0(1:end-1) .* exp(-alist)' + Mm0(2:end));
+%Sm = B*2/rho * (Pm0(1:end-1) .* exp(-alist)' + Mm0(2:end));
+Sm = B*2/rho * (Pm0(1:end-1) .* exp(-alist)');
 Smreg = zeros(1,Nregions);
 
 %%

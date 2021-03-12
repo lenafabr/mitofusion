@@ -8,6 +8,7 @@ filename = '../examples/example_cog.snap.out';
 % number of clusters in each snapshot (nclust)
 % id numbers of all the clusters (ids)
 % states (-1=retro, 1 = antero, 0 = stopped)
+%%
 [positions, proteins,timevals,nregions,nclust,~,states,idtags] = readSnap(filename);
 
 %% Watch animation of the simulated  mitochondria

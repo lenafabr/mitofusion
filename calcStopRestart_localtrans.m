@@ -11,21 +11,26 @@
 % xplot= x positions at which densities are calculated
 % dx = binsize for x
 
-function [opt,Pmx,Mmx,Sm,regpos,xplot,dx] = calcStopRestart(options)
+function [opt,Pmx,Mmx,Sm,regpos,xplot,dx] = calcStopRestart_localtrans(options)
 %%
 % declare default parameters
 opt.cm = 1; % protein per mitochondria
 opt.ps = 0.4; % stopping probability at sinks
 opt.v = 1; % velocity of moving mito
-opt.kd = 0.1; % protein degradation rate
+opt.kd = 0.06; % protein degradation rate
 opt.kw = 0.1; % restarting prob at sinks
 opt.L = 1; % total domain length
-opt.M = 10; % total number of mitochondria
+opt.M = 1500; % total number of mitochondria
 opt.Nregions = 10; % number of regions the domain is divided into
 
 opt.npt = 1000; %discretization while plotting
 
 opt.maxS = 0; %use when setting a limit to how many can stop 
+
+% local translation parameters
+% if have certain %age 
+opt.trans_frac = 0.2;
+%opt.r = 0.05; %prefactor for local translation term
 
 % copy over input options
 if (exist('options')==1)
@@ -51,6 +56,11 @@ P0 = cm * M / (2*(L+opt.Nregions*v*ps/kw));
 B = kw*ps/(2*(kd+kw)); %Beta, factor in equations
 a = kd*del/v; % alpha, exponent used in equation
 
+% calculate required rate of production to contribute to trans_frac
+%r = opt.trans_frac * (L*kw+opt.Nregions*v*ps)*(kw+kd) /(v*ps*Nregions);
+% below: set %age of total influx into the domain due to transport from soma 
+r = opt.trans_frac * kw /(2*v*ps*Nregions); 
+opt.r = r;
 
 %% boundary conditions
 % order of elements: P1 M1 P2 M2 ... Pn Mn
@@ -63,7 +73,8 @@ pmmatrix = zeros(nMat); %declare a zero matrix
 % constant influx of proteins
 pmmatrix(1,1) = 1;
 constmatrix(1,1) = P0; 
-constmatrix(2:end) 
+localterm = opt.r*v*ps*M/(L*kw+opt.Nregions*v*ps)/(kd+kw); %local translation term
+constmatrix(2:end-1) = 1/2*localterm*kw;
 
 
 
@@ -98,7 +109,7 @@ Pm0 = solnvector(1:2:end-1);
 Mm0 = solnvector(2:2:end);
 
 
-Sm = v*ps/(kd+kw)* (Pm0(1:end-1) .* exp(-a) + Mm0(2:end));
+Sm = v*ps/(kd+kw)* (Pm0(1:end-1) .* exp(-a) + Mm0(2:end)) + localterm ;
 
 %%
 ptsperregion = ceil((opt.npt-1)/(opt.Nregions+1));
