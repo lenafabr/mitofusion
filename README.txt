@@ -2,6 +2,12 @@ calcSpaceStation.m: calculate steady-state results for the analytical Space Stat
 
 calcStopRestart.m: calculate steady-state results for the analytical CoG model
 
+calcSpaceStation_Branch.m: space station model for symmetric branched geometry
+
+calcSpaceStation_antero.m: space station model with only anterograde mitochondria allowed to fuse
+
+calcStopRestart_localtrans.m: CoG model with local translation included
+
 These codes can be used in conjunction with the supporting .m files provided for each figure to regenerate analytic results.
 
 
