@@ -59,7 +59,7 @@ a = kd*del/v; % alpha, exponent used in equation
 % calculate required rate of production to contribute to trans_frac
 %r = opt.trans_frac * (L*kw+opt.Nregions*v*ps)*(kw+kd) /(v*ps*Nregions);
 % below: set %age of total influx into the domain due to transport from soma 
-r = opt.trans_frac * kw /(2*v*ps*Nregions); 
+r = opt.trans_frac * v/2/L; 
 opt.r = r;
 
 %% boundary conditions

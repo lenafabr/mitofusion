@@ -38,15 +38,14 @@ if (exist('options')==1)
     opt = copyStruct(options, opt);
 end
 
-%opt.rho = (opt.M - opt.Nsinks)/opt.L;
 % declare rho as option
 if (opt.ndeg == 1)
      opt.rho = (opt.M - opt.Nsinks)/opt.L;
 else
-     opt.rho = (opt.M - (opt.Nsinks/opt.Nregions)*(opt.ndeg^(opt.Nregions)-1)/(opt.ndeg-1))/opt.L;
+    Nregtot = (opt.ndeg^(opt.Nregions)-1);          
+    opt.rho = (opt.M - (opt.Nsinks/opt.Nregions)*Nregtot/(opt.ndeg-1))/opt.L;        
 end
 
-%opt.rho 
 
 % redeclare for simple reading of code
 del = opt.L/(opt.Nregions+1); % distance between regions
@@ -69,13 +68,7 @@ if (opt.sinkinreginput == 0) %if no predefined distribution exists
     clear sinkinreg
     sinkinreg = randi(Nregions,1,Nsinks);
     Nm = zeros(1,Nregions); % Nm gives the number of sink mito in a given region
-%     lastsink = 1;
-%     for i = 1:Nregions
-%         Nm(i) = Nsinkperreg * ndeg^(i-1); 
-%         sinkinreg(lastsink:lastsink+Nm(i)-1) = i;
-%         lastsink = lastsink+Nm(i);
-%     end
-        
+
 else
     sinkinreg = options.sinkinreginput;
 end
@@ -83,9 +76,7 @@ sinkinreg = sort(sinkinreg);
 for k = 1:Nregions
     Nm(k) = sum(sinkinreg == k);
 end
-% reassign total number of sinks as lastsink
-%Nsinks = lastsink-1;
-%opt.Nsinks = Nsinks;
+
 %%
 % get spacing between individual sinks
 dellist = del * (sinkinreg(2:end) - sinkinreg(1:end-1)); 
@@ -107,7 +98,6 @@ constmatrix(1,1) = rho/2;
 
 
 % iteratively declare rest of the elements, going region by region
-% better way to do this?
 rowstart = 2;
 columnstart = 1;
 
@@ -117,11 +107,11 @@ for m = 1:Nsinks
     currReg = sinkinreg(m); % region which the sink belongs to
     rhoN = rho/ndeg^(currReg-1); % scaled rho for input
     B = pf * v *rhoN/ (4 * (kd + v*rhoN*pf/2)); %Beta, factor in equations
-    if (alist(m) > 0)
+    if (m < Nsinks && currReg<sinkinreg(m+1)) %if region switches and branching occurs
         % P eqn
-        pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m))/ndeg,0,1,-pf*B/2/ndeg];
+        pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2)/ndeg * exp(-alist(m)),0,1,-pf*B/2];
         % M eqn
-        pmmatrix(rowstart+1,columnstart:columnstart+3) = [-pf*B*exp(-alist(m))/2/ndeg,exp(alist(m))/ndeg,0,-(1- (pf/2) + pf*B/2/ndeg)];
+        pmmatrix(rowstart+1,columnstart:columnstart+3) = [-pf*B*exp(-alist(m))/2,exp(alist(m)),0,-ndeg*(1- (pf/2) + pf*B/2)];
     else
         % P eqn
         pmmatrix(rowstart,columnstart:columnstart+3) = [-(1- (pf/2) + B*pf/2) * exp(-alist(m)),0,1,-pf*B/2];
@@ -146,13 +136,16 @@ solnvector = pmmatrix\constmatrix;
 Pm0 = solnvector(1:2:end-1);
 Mm0 = solnvector(2:2:end);
 Sm = zeros(Nsinks,1);
-%Sm = B*2/rho * (Pm0(1:end-1) .* exp(-alist)' + Mm0(2:end));
 
 for m = 1:Nsinks
     currReg = sinkinreg(m); % region which the sink belongs to
     rhoN = rho/ndeg^(currReg-1);
     B = pf * v *rhoN / (4 * (kd + v*rhoN*pf/2));
-    Sm(m) = B*2/rhoN * (Pm0(m) .* exp(-alist(m)) + Mm0(m+1));
+    if (m < Nsinks && currReg<sinkinreg(m+1))
+        Sm(m) = B*2/rhoN * (Pm0(m) .* exp(-alist(m)) + ndeg*Mm0(m+1));
+    else
+        Sm(m) = B*2/rhoN * (Pm0(m) .* exp(-alist(m)) + Mm0(m+1));
+    end
 end
     
 Smreg = zeros(1,Nregions);
