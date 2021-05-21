@@ -8,8 +8,6 @@ calcSpaceStation_antero.m: space station model with only anterograde mitochondri
 
 calcStopRestart_localtrans.m: CoG model with local translation included
 
-These codes can be used in conjunction with the supporting .m files provided for each figure to regenerate analytic results.
-
 
 --------------------------------------------
 Simulation Code is provided (in fortran) in the simulations subdirectory
